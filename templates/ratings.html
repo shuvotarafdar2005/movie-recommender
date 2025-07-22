@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block body %}
+<h3>Your Rated Movies</h3>
+<div class="row">
+  {% for m in movies %}
+    <div class="col-md-3 mb-4">
+      <a href="/movie/{{ m.id }}">
+        <div class="card h-100">
+          {% if m.poster_path %}<img src="https://image.tmdb.org/t/p/w500{{ m.poster_path }}" class="card-img-top">{% endif %}
+          <div class="card-body">
+            <h5 class="card-title">{{ m.title }}</h5>
+            <p class="card-text">⭐ You rated: {{ m.your_rating }}</p>
+          </div>
+        </div>
+      </a>
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}

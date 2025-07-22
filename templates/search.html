@@ -1,0 +1,111 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h3>🔍 Search Movies</h3>
+
+<!-- Search Form -->
+<form action="/search" method="post" class="mb-4">
+    <input type="text" id="searchInput" name="query" placeholder="Search for a movie..." autocomplete="off" class="form-control">
+    <ul id="suggestions" class="list-group position-absolute w-100" style="z-index:1000; display:none;"></ul>
+</form>
+
+{% block scripts %}
+<script>
+const input = document.getElementById("searchInput");
+const suggestionBox = document.getElementById("suggestions");
+
+let activeFetch = null;
+
+input.addEventListener("input", async function () {
+    const rawQuery = this.value;
+    const query = rawQuery.trim();
+
+    // Hide suggestions if query is empty or less than 2 characters
+    if (!query || query.length < 2) {
+        suggestionBox.innerHTML = "";
+        suggestionBox.style.display = "none";
+        return;
+    }
+
+    // Cancel any ongoing fetch
+    if (activeFetch) {
+        activeFetch.abort();
+    }
+
+    const controller = new AbortController();
+    activeFetch = controller;
+
+    try {
+        const res = await fetch(`/suggest?q=${encodeURIComponent(query)}`, {
+            signal: controller.signal
+        });
+
+        const suggestions = await res.json();
+
+        // Filter duplicates and take top 5
+        const uniqueSuggestions = [...new Set(suggestions)].slice(0, 5);
+
+        if (!uniqueSuggestions.length) {
+            suggestionBox.innerHTML = "";
+            suggestionBox.style.display = "none";
+            return;
+        }
+
+        suggestionBox.innerHTML = "";
+        uniqueSuggestions.forEach(title => {
+            const li = document.createElement("li");
+            li.className = "list-group-item list-group-item-action";
+            li.textContent = title;
+            li.onclick = () => {
+                input.value = title;
+                suggestionBox.innerHTML = "";
+                suggestionBox.style.display = "none";
+            };
+            suggestionBox.appendChild(li);
+        });
+
+        suggestionBox.style.display = "block";
+    } catch (err) {
+        if (err.name !== "AbortError") {
+            console.error("Error fetching suggestions:", err);
+        }
+    }
+});
+
+// Hide suggestions when clicking outside
+document.addEventListener("click", function (e) {
+    if (!suggestionBox.contains(e.target) && e.target !== input) {
+        suggestionBox.innerHTML = "";
+        suggestionBox.style.display = "none";
+    }
+});
+</script>
+{% endblock %}
+
+{% if movies %}
+    <h5>Results for "{{ query }}":</h5>
+    <div class="row">
+        {% for movie in movies %}
+            <div class="col-md-3 mb-4">
+                <a href="/movie/{{ movie.id }}" class="text-decoration-none text-dark">
+                    <div class="card h-100">
+                        {% if movie.poster_path %}
+                            <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" class="card-img-top" alt="{{ movie.title }}">
+                        {% else %}
+                            <div class="card-img-top bg-secondary text-white d-flex align-items-center justify-content-center" style="height: 375px;">
+                                No Image
+                            </div>
+                        {% endif %}
+                        <div class="card-body">
+                            <h5 class="card-title">{{ movie.title }}</h5>
+                            <p class="card-text">Release: {{ movie.release_date or "N/A" }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+{% elif query %}
+    <p>No results found for "{{ query }}". Try something else!</p>
+{% endif %}
+{% endblock %}

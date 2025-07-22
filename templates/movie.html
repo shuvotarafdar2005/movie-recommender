@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block body %}
+<h3>{{ movie.title }} ({{ movie.release_date[:4] }})</h3>
+<div class="row">
+    <div class="col-md-4">
+        {% if movie.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" class="img-fluid">
+        {% endif %}
+    </div>
+    <div class="col-md-8">
+        <p><strong>Overview:</strong> {{ movie.overview }}</p>
+        <p><strong>Genres:</strong>
+            {% for genre in movie.genres %}
+                {{ genre.name }}{% if not loop.last %}, {% endif %}
+            {% endfor %}
+        </p>
+        
+        <hr>
+
+        <form action="/movie/{{ movie.id }}" method="post">
+            <label for="rating">⭐ Rate this movie:</label>
+            <select name="rating" class="form-select mb-2" required>
+                <option value="">-- Select --</option>
+                {% for i in range(1, 6) %}
+                    <option value="{{ i }}" {% if user_rating == i %}selected{% endif %}>{{ i }} Star{{ 's' if i > 1 }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+        {% if user_rating %}
+        <p class="mt-2">Your rating: ⭐ {{ user_rating }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
